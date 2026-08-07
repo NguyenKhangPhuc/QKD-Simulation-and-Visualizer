@@ -88,10 +88,24 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
         json={"sample_indices": sample_indices, "sample_bits": sample_bits, "matching_indices": matching_indices}
     )
     qber = res.json()["qber"]
+    bob_measured_bit = res.json()["bob_measured_bit"]
     print(f"QBER do Bob tính toán: {qber * 100}%")
 
     if qber > 0.11:
         print("❌ Bị nghe lén, hủy khóa!")
+        return {
+        "initial_alice_bits": alice_bits,
+        "initial_alice_bases": alice_bases,
+        "eve_bases": eve_bases,
+        "eve_measured_bits": eve_measured_bits,
+        "initial_bob_bases": bob_bases,
+        "initial_bob_bits": bob_measured_bit,
+        "matching_indices_alice_bob": matching_indices,
+        "sample_size_qber": sample_size,
+        "sample_indices_qber": sample_indices,
+        "sample_bits_qber": sample_bits,
+        "qber": qber
+    }
     else:
         print("✅ Mạng an toàn! Tạo Final Key.")
         final_key = "".join([str(alice_bits[i]) for i in matching_indices if i not in sample_indices])
@@ -121,5 +135,19 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
             "bob_final_key_string": final_key  # Giả lập Bob dùng key giống Alice
         }
     )
-
-    print("Kết quả từ Bob:", res.json())
+    bob_final_key = res.json()["bob_final_key"]
+    return {
+        "initial_alice_bits": alice_bits,
+        "initial_alice_bases": alice_bases,
+        "eve_bases": eve_bases,
+        "eve_measured_bits": eve_measured_bits,
+        "initial_bob_bases": bob_bases,
+        "initial_bob_bits": bob_measured_bit,
+        "matching_indices_alice_bob": matching_indices,
+        "sample_size_qber": sample_size,
+        "sample_indices_qber": sample_indices,
+        "sample_bits_qber": sample_bits,
+        "qber": qber,
+        "alice_final_key": final_key,
+        "bob_final_key": bob_final_key
+    }

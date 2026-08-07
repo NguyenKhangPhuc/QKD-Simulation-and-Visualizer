@@ -71,7 +71,7 @@ def check_qber(payload: QberPayload):
             for i in payload.matching_indices 
             if i not in payload.sample_indices
         ])
-    return {"qber": qber}
+    return {"qber": qber, "bob_measured_bits": bob_measured_bits}
 
 
 @app.post("/chat/receive")
@@ -98,7 +98,7 @@ def receive_secret_message(
         plain_text = decrypted_bytes.decode()
         
         print(f"\n[Bob's Screen] 📩 Tin nhắn giải mã thành công: {plain_text}")
-        return {"status": "success", "decrypted_message": plain_text}
+        return {"status": "success", "decrypted_message": plain_text, "bob_final_key": bob_final_key}
         
     except Exception as e:
         return {"status": "error", "message": "Giải mã thất bại! Khóa không khớp."}

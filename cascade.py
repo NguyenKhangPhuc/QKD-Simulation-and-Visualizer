@@ -18,6 +18,40 @@ import random
 
 
 # ---------------------------------------------------------------------------
+# ƯỚC LƯỢNG QBER AN TOÀN HƠN: Serfling bound (lấy mẫu không hoàn lại)
+# ---------------------------------------------------------------------------
+
+def serfling_upper_bound(sample_qber, n, m, epsilon):
+    """
+    Tính CẬN TRÊN của QBER thật (trên phần khóa CHƯA lấy mẫu) với độ tin cậy
+    (1 - epsilon), dựa trên QBER đo được trên mẫu.
+
+    Vấn đề của việc dùng thẳng `qber_estimate = sample_errors/sample_size`:
+    đây chỉ là 1 điểm ước lượng, có thể lệch khá xa so với QBER thật của toàn
+    bộ khóa chỉ vì may rủi khi chọn mẫu (như đã tính ở lượt trước: xác suất
+    mẫu bắt được 0 lỗi dù thực tế có lỗi là ~34% với mẫu nhỏ).
+
+    Serfling's inequality (1974) cho lấy mẫu KHÔNG HOÀN LẠI từ 1 quần thể hữu
+    hạn kích thước n, với mẫu kích thước m và trung bình mẫu `sample_qber`:
+
+        P( qber_that_su - sample_qber >= delta ) <= exp( -2*m*delta^2 / (1 - (m-1)/n) )
+
+    Giải ngược để tìm delta ứng với 1 xác suất thất bại mong muốn `epsilon`:
+
+        delta = sqrt( ln(1/epsilon) * (1 - (m-1)/n) / (2*m) )
+
+    Cận trên trả về: sample_qber + delta. Với xác suất >= (1-epsilon),
+    QBER thật KHÔNG vượt quá giá trị này -> dùng giá trị này để quyết định
+    thay vì dùng thẳng sample_qber, giúp tránh trường hợp mẫu "may mắn" đo
+    ra QBER thấp hơn thực tế mà vẫn tưởng an toàn.
+    """
+    m = max(1, m)
+    finite_population_factor = max(0.0, 1 - (m - 1) / n)
+    delta = math.sqrt(math.log(1 / epsilon) * finite_population_factor / (2 * m))
+    return min(1.0, sample_qber + delta)
+
+
+# ---------------------------------------------------------------------------
 # CÁC HÀM CƠ BẢN (giữ nguyên ý tưởng bản gốc)
 # ---------------------------------------------------------------------------
 
@@ -252,14 +286,14 @@ class Cascade:
 
 def simulate_qkd_flow():
     rng = random.Random(7)
-    n = 200
+    n = 20000
 
     # --- Giả lập kết quả SAU BƯỚC SIFTING (đã lọc theo basis trùng nhau) ---
     alice_sifted = [rng.randint(0, 1) for _ in range(n)]
     bob_sifted = alice_sifted.copy()
 
     # Giả lập nhiễu kênh lượng tử: cài lỗi thật theo 1 QBER "thật" (Bob không biết)
-    true_qber = 0.05
+    true_qber = 0.03
     num_real_errors = int(n * true_qber)
     error_positions = rng.sample(range(n), num_real_errors)
     for idx in error_positions:
@@ -275,7 +309,17 @@ def simulate_qkd_flow():
     sample_errors = sum(1 for i in sample_positions if alice_sifted[i] != bob_sifted[i])
     qber_estimate = sample_errors / sample_size
     print(f"[Ước lượng QBER] lấy mẫu công khai {sample_size} bit -> "
-          f"QBER ước lượng = {qber_estimate:.4f}")
+          f"QBER ước lượng thô (điểm) = {qber_estimate:.4f}")
+
+    # An toàn hơn: không dùng thẳng qber_estimate (dễ bị lệch do may rủi lấy
+    # mẫu), mà dùng CẬN TRÊN thống kê với xác suất thất bại epsilon cực nhỏ.
+    # epsilon càng nhỏ -> cận trên càng "rộng tay", càng an toàn (khó bị Eve
+    # qua mặt) nhưng cũng dễ hủy oan phiên khóa tốt hơn -> đây là tham số
+    # bảo mật (security parameter) phải chọn trước, không tùy tiện đổi.
+    epsilon = 1e-6
+    qber_bound = serfling_upper_bound(qber_estimate, n, sample_size, epsilon)
+    print(f"[Serfling bound] với xác suất thất bại epsilon={epsilon:.0e} -> "
+          f"QBER cận trên (dùng để quyết định) = {qber_bound:.4f}")
 
     remain = [i for i in range(n) if i not in sample_positions]
     alice_key = [alice_sifted[i] for i in remain]
@@ -283,19 +327,21 @@ def simulate_qkd_flow():
     print(f"[Sau loại mẫu] khóa làm việc còn {len(alice_key)} bit\n")
 
     # --- BƯỚC 2: kiểm tra ngưỡng an toàn (BB84 lý thuyết ~11%) ---
+    # So sánh CẬN TRÊN (không phải điểm ước lượng thô) với ngưỡng, để quyết
+    # định có đủ an toàn tin tưởng không, đúng tinh thần security proof thật.
     QBER_THRESHOLD = 0.11
-    if qber_estimate > QBER_THRESHOLD:
-        print(f"❌ QBER ({qber_estimate:.4f}) vượt ngưỡng ({QBER_THRESHOLD}) "
-              f"-> NGHI CÓ NGHE LÉN, HỦY PHIÊN KHÓA!")
+    if qber_bound > QBER_THRESHOLD:
+        print(f"❌ QBER cận trên ({qber_bound:.4f}) vượt ngưỡng ({QBER_THRESHOLD}) "
+              f"-> NGHI CÓ NGHE LÉN (hoặc mẫu không đủ để tin tưởng), HỦY PHIÊN KHÓA!")
         return
 
-    print(f"✅ QBER dưới ngưỡng {QBER_THRESHOLD} -> tiến hành đối soát lỗi (Cascade)\n")
+    print(f"✅ QBER cận trên vẫn dưới ngưỡng {QBER_THRESHOLD} -> tiến hành đối soát lỗi (Cascade)\n")
 
     real_errors_remaining = sum(1 for a, b in zip(alice_key, bob_key) if a != b)
     print(f"[Trước Cascade] số lỗi thật còn lại trong khóa làm việc: {real_errors_remaining}\n")
 
     # --- BƯỚC 3: CASCADE RECONCILIATION ---
-    cascade = Cascade(alice_key, bob_key, qber_estimate, num_passes=4)
+    cascade = Cascade(alice_key, bob_key, qber_bound, num_passes=4)
     total_corrections = cascade.run()
 
     match = alice_key == bob_key
@@ -320,6 +366,78 @@ def simulate_qkd_flow():
     print(f"-> Băm (hash) khóa {len(alice_key)} bit xuống còn ~{final_len} bit "
           f"làm FINAL KEY dùng chung, an toàn trước Eve.")
 
+def simulate_bob_alice_flow(alice_sifted, bob_sifted):
+    n = len(alice_sifted)
+    # Giả lập nhiễu kênh lượng tử: cài lỗi thật theo 1 QBER "thật" (Bob không biết)
+    true_qber = 0.03
+    num_real_errors = int(n * true_qber)
+    error_positions = rng.sample(range(n), num_real_errors)
+    for idx in error_positions:
+        bob_sifted[idx] = 1 - bob_sifted[idx]
 
-if __name__ == "__main__":
-    simulate_qkd_flow()
+    print(f"[Sifted key] độ dài {n} bit, số lỗi thật đã cài: {num_real_errors} "
+          f"tại vị trí {sorted(error_positions)}\n")
+
+    # --- BƯỚC 1: ước lượng QBER bằng cách công khai 1 phần mẫu ngẫu nhiên ---
+    # (các bit đã công khai so sánh thì phải LOẠI BỎ khỏi khóa, vì Eve cũng nghe được)
+    sample_size = int(n * 0.1)
+    sample_positions = rng.sample(range(n), sample_size)
+    sample_errors = sum(1 for i in sample_positions if alice_sifted[i] != bob_sifted[i])
+    qber_estimate = sample_errors / sample_size
+    print(f"[Ước lượng QBER] lấy mẫu công khai {sample_size} bit -> "
+          f"QBER ước lượng thô (điểm) = {qber_estimate:.4f}")
+
+    # An toàn hơn: không dùng thẳng qber_estimate (dễ bị lệch do may rủi lấy
+    # mẫu), mà dùng CẬN TRÊN thống kê với xác suất thất bại epsilon cực nhỏ.
+    # epsilon càng nhỏ -> cận trên càng "rộng tay", càng an toàn (khó bị Eve
+    # qua mặt) nhưng cũng dễ hủy oan phiên khóa tốt hơn -> đây là tham số
+    # bảo mật (security parameter) phải chọn trước, không tùy tiện đổi.
+    epsilon = 1e-6
+    qber_bound = serfling_upper_bound(qber_estimate, n, sample_size, epsilon)
+    print(f"[Serfling bound] với xác suất thất bại epsilon={epsilon:.0e} -> "
+          f"QBER cận trên (dùng để quyết định) = {qber_bound:.4f}")
+
+    remain = [i for i in range(n) if i not in sample_positions]
+    alice_key = [alice_sifted[i] for i in remain]
+    bob_key = [bob_sifted[i] for i in remain]
+    print(f"[Sau loại mẫu] khóa làm việc còn {len(alice_key)} bit\n")
+
+    # --- BƯỚC 2: kiểm tra ngưỡng an toàn (BB84 lý thuyết ~11%) ---
+    # So sánh CẬN TRÊN (không phải điểm ước lượng thô) với ngưỡng, để quyết
+    # định có đủ an toàn tin tưởng không, đúng tinh thần security proof thật.
+    QBER_THRESHOLD = 0.11
+    if qber_bound > QBER_THRESHOLD:
+        print(f"❌ QBER cận trên ({qber_bound:.4f}) vượt ngưỡng ({QBER_THRESHOLD}) "
+              f"-> NGHI CÓ NGHE LÉN (hoặc mẫu không đủ để tin tưởng), HỦY PHIÊN KHÓA!")
+        return
+
+    print(f"✅ QBER cận trên vẫn dưới ngưỡng {QBER_THRESHOLD} -> tiến hành đối soát lỗi (Cascade)\n")
+
+    real_errors_remaining = sum(1 for a, b in zip(alice_key, bob_key) if a != b)
+    print(f"[Trước Cascade] số lỗi thật còn lại trong khóa làm việc: {real_errors_remaining}\n")
+
+    # --- BƯỚC 3: CASCADE RECONCILIATION ---
+    cascade = Cascade(alice_key, bob_key, qber_bound, num_passes=4)
+    total_corrections = cascade.run()
+
+    match = alice_key == bob_key
+    print("--- KẾT QUẢ CASCADE ---")
+    print(f"Tổng số lần sửa bit (kể cả do backtrack phát hiện thêm): {total_corrections}")
+    print(f"Số bit đã lộ ra kênh công khai qua các lần so sánh parity: {cascade.leaked_bits}")
+    print(f"Khóa Alice == Khóa Bob sau Cascade: {match}\n")
+
+    if not match:
+        print("⚠️ Vẫn còn lỗi sau các vòng đã chạy -> cần thêm vòng hoặc dùng BICONF để dọn nốt.")
+        return {"success": false, "message": 'Bob key and alice key still have mismatch after error simulation'}
+
+    # --- BƯỚC 4: PRIVACY AMPLIFICATION (rút gọn khóa) ---
+    # Nguyên tắc: độ dài khóa cuối phải trừ đi toàn bộ thông tin đã lộ công khai
+    # (bit mẫu QBER + bit parity trong Cascade), cộng biên an toàn.
+    leaked_total = sample_size + cascade.leaked_bits
+    security_margin = 20  # biên an toàn thêm (tham số thực tế phụ thuộc mô hình bảo mật)
+    final_len = max(0, len(alice_key) - leaked_total - security_margin)
+
+    print(f"[Privacy Amplification] tổng bit đã lộ: {leaked_total} "
+          f"(mẫu QBER: {sample_size} + parity Cascade: {cascade.leaked_bits})")
+    print(f"-> Băm (hash) khóa {len(alice_key)} bit xuống còn ~{final_len} bit "
+          f"làm FINAL KEY dùng chung, an toàn trước Eve.")
