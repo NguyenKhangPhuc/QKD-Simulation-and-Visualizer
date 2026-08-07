@@ -9,11 +9,20 @@ from fastapi import FastAPI,Body
 from pydantic import BaseModel
 from qiskit_aer import AerSimulator
 
+from fastapi.middleware.cors import CORSMiddleware
+
 SIMULATOR = AerSimulator()
 
 SERVER_URL = "http://localhost:8000"
-NUM_BITS = 500
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("--- [1] KHỞI TẠO VÀ MÃ HÓA QUBITS ---")
 
@@ -22,14 +31,15 @@ class FrontEndInitializePayload(BaseModel):
     is_eve: bool
 
 def generate_bits_and_base(num_bits: int):
-    bits = [random.randint(0, 1) for _ in range(payload.num_bits)]
-    bases = [random.randint(0, 1) for _ in range(payload.num_bits)]
+    bits = [random.randint(0, 1) for _ in range(num_bits)]
+    bases = [random.randint(0, 1) for _ in range(num_bits)]
     return bits,bases
 
 def measure_bit(circuit, basis):
     qc = circuit.copy()
     if (basis == 1):
-        qc.h(0,0)
+        qc.h(0)
+    qc.measure(0, 0)
     job = SIMULATOR.run(qc, shots=1)
     result = job.result().get_counts()
     measured_bit = int(list(result.keys())[0])
@@ -50,15 +60,18 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
     alice_bits,alice_bases = generate_bits_and_base(payload.num_bits)
 
     qasm_strings = []
-    for i in range(NUM_BITS):
+    eve_bases = []
+    eve_measured_bits = []
+    for i in range(payload.num_bits):
         qc = encode_bit(alice_bits[i], alice_bases[i])
         qasm_strings.append(qasm2.dumps(qc))
     if payload.is_eve == True:
-        _, eve_bases = generate_bits_and_base(payload.num_bits)
+        _, eve_created_bases = generate_bits_and_base(payload.num_bits)
+        eve_bases = eve_created_bases
         harmful_qasm_strings = []
-        eve_measured_bits = []
+        
         for i, qasm_str in enumerate(qasm_strings):
-            qc = qasm2.load(qasm_str)
+            qc = qasm2.loads(qasm_str)
             measured_bit = measure_bit(qc, eve_bases[i])
             eve_measured_bits.append(measured_bit)
         for i in range(len(eve_measured_bits)):
@@ -74,7 +87,7 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
     res = requests.get(f"{SERVER_URL}/classical_channel/bases")
     bob_bases = res.json()["bob_bases"]
 
-    matching_indices = [i for i in range(NUM_BITS) if alice_bases[i] == bob_bases[i]]
+    matching_indices = [i for i in range(payload.num_bits) if alice_bases[i] == bob_bases[i]]
     print(f"Số lượng bit khớp cơ sở: {len(matching_indices)}")
 
     print("\n--- [3] KIỂM TRA QBER ---")
@@ -88,7 +101,8 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
         json={"sample_indices": sample_indices, "sample_bits": sample_bits, "matching_indices": matching_indices}
     )
     qber = res.json()["qber"]
-    bob_measured_bit = res.json()["bob_measured_bit"]
+    bob_measured_bits_from_bob = res.json()["bob_measured_bits"]
+    mismatches = res.json().get("mismatches", 0)
     print(f"QBER do Bob tính toán: {qber * 100}%")
 
     if qber > 0.11:
@@ -99,7 +113,7 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
         "eve_bases": eve_bases,
         "eve_measured_bits": eve_measured_bits,
         "initial_bob_bases": bob_bases,
-        "initial_bob_bits": bob_measured_bit,
+        "initial_bob_bits": bob_measured_bits_from_bob,
         "matching_indices_alice_bob": matching_indices,
         "sample_size_qber": sample_size,
         "sample_indices_qber": sample_indices,
@@ -136,18 +150,25 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
         }
     )
     bob_final_key = res.json()["bob_final_key"]
+
     return {
         "initial_alice_bits": alice_bits,
         "initial_alice_bases": alice_bases,
         "eve_bases": eve_bases,
         "eve_measured_bits": eve_measured_bits,
         "initial_bob_bases": bob_bases,
-        "initial_bob_bits": bob_measured_bit,
+        "initial_bob_bits": bob_measured_bits_from_bob,
         "matching_indices_alice_bob": matching_indices,
         "sample_size_qber": sample_size,
         "sample_indices_qber": sample_indices,
         "sample_bits_qber": sample_bits,
+        "mismatches": mismatches, 
         "qber": qber,
         "alice_final_key": final_key,
         "bob_final_key": bob_final_key
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8001)
+

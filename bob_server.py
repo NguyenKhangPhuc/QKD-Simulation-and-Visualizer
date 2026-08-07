@@ -7,7 +7,18 @@ import qiskit.qasm2 as qasm2  # Thư viện để dịch chuỗi QASM
 import hashlib
 import base64
 from cryptography.fernet import Fernet
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 simulator = AerSimulator()
 
 # Dữ liệu nội bộ của Bob
@@ -71,7 +82,7 @@ def check_qber(payload: QberPayload):
             for i in payload.matching_indices 
             if i not in payload.sample_indices
         ])
-    return {"qber": qber, "bob_measured_bits": bob_measured_bits}
+    return {"qber": qber, "bob_measured_bits": bob_measured_bits, "mismatches":mismatches }
 
 
 @app.post("/chat/receive")
@@ -102,4 +113,7 @@ def receive_secret_message(
         
     except Exception as e:
         return {"status": "error", "message": "Giải mã thất bại! Khóa không khớp."}
-# Lệnh chạy Server: uvicorn bob_server:app --reload
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

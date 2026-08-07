@@ -14,6 +14,7 @@ export interface InitializeConnectionResponse {
   sample_size_qber: number;
   sample_indices_qber: number[];
   sample_bits_qber: number[];
+  mismatches?: number;
   qber: number;
   alice_final_key?: string;
   bob_final_key?: string;
