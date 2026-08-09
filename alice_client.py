@@ -11,6 +11,7 @@ sent to Bob.
 
 import random
 import requests
+import os
 from qiskit import QuantumCircuit
 import qiskit.qasm2 as qasm2
 import hashlib
@@ -24,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 SIMULATOR = AerSimulator()
 
-SERVER_URL = "http://localhost:8000"
+SERVER_URL = os.getenv("BOB_SERVER_URL", "http://localhost:8000")
 app = FastAPI()
 
 app.add_middleware(

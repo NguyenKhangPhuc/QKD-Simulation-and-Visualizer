@@ -1,0 +1,13 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+qkd-visualizer/node_modules
+qkd-visualizer/.next
+Dockerfile
+docker-compose.yml
+.agents
+.vscode

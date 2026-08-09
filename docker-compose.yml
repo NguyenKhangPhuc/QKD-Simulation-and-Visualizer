@@ -1,0 +1,40 @@
+services:
+  bob_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bob_server
+    command: ["uvicorn", "bob_server:app", "--host", "0.0.0.0", "--port", "8000"]
+    networks:
+      - qkd-network
+    expose:
+      - "8000"
+    restart: unless-stopped
+    healthcheck:
+      # Use python's standard library to perform a lightweight healthcheck without needing curl/wget
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/classical_channel/bases')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  alice_client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alice_client
+    command: ["uvicorn", "alice_client:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "8000:8001" # Exposes Alice client externally on host port 8000, mapping to internal container port 8001
+    environment:
+      - BOB_SERVER_URL=http://bob_server:8000
+    networks:
+      - qkd-network
+    restart: unless-stopped
+    depends_on:
+      bob_server:
+        condition: service_healthy
+
+networks:
+  qkd-network:
+    driver: bridge
