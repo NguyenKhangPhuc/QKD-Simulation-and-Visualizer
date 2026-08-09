@@ -18,7 +18,3 @@ build/
 # OS
 .DS_Store
 Thumbs.db
-
-# Subprojects (as requested)
-qkd-visualizer/
-pkd-visualizer/
