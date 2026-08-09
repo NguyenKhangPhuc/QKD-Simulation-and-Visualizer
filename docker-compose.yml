@@ -1,5 +1,6 @@
 services:
   bob_server:
+    image: ${DOCKER_IMAGE:-nguyenkhangphuc/qkd-simulation:latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,6 +20,7 @@ services:
       start_period: 5s
 
   alice_client:
+    image: ${DOCKER_IMAGE:-nguyenkhangphuc/qkd-simulation:latest}
     build:
       context: .
       dockerfile: Dockerfile
