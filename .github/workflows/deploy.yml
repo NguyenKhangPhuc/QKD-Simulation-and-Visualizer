@@ -1,0 +1,50 @@
+name: Deploy to Remote Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    # Purpose: Pulls the new Docker image and restarts the services on the remote server.
+    # Rationale: Synchronizes the remote production server with the latest verified container image.
+    # Dependencies: None.
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH and Deploy
+        run: |
+          # Setup SSH directory and populate private key
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
+          # Initialize ssh-agent and add deployment private key
+          eval $(ssh-agent -s)
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+          
+          # Add jump host private key if jump host is used
+          if [ -n "${{ secrets.SSH_JUMP_KEY }}" ]; then
+            echo "${{ secrets.SSH_JUMP_KEY }}" | tr -d '\r' | ssh-add -
+          fi
+
+          # Construct SSH command with Jump Host option if applicable
+          SSH_OPTS="-o StrictHostKeyChecking=no"
+          if [ -n "${{ secrets.SSH_JUMP_HOST }}" ]; then
+            SSH_OPTS="$SSH_OPTS -J ${{ secrets.SSH_JUMP_USER }}@${{ secrets.SSH_JUMP_HOST }}"
+          fi
+
+          # Define the target image using the unique commit SHA tag
+          DOCKER_IMAGE="${{ secrets.DOCKER_HUB_USERNAME }}/course-matcher-api:sha-${{ github.sha }}"
+
+          # SSH into target host, navigate to directory, update env image, pull and restart containers
+          ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd QKD-Simulation-and-Visualizer/ && \
+            export DOCKER_IMAGE=$DOCKER_IMAGE && \
+            docker compose pull && \
+            docker compose down && \
+            docker compose up -d
+          "
