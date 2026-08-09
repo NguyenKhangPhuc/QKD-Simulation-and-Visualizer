@@ -35,9 +35,22 @@ export const StepBobTable: React.FC<StepBobTableProps> = ({ result, visibleColum
     {
       key: 'basis',
       header: 'Bob Basis',
+      render: (row) => {
+        const aliceBasis = result.initial_alice_bases[row.idx];
+        const isMatch = row.basis === aliceBasis;
+        return (
+          <span className={isMatch ? 'font-bold text-black' : 'text-zinc-500'}>
+            {row.basis === 0 ? '0 (Z)' : '1 (X)'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'decode',
+      header: 'Decode Gate',
       render: (row) => (
-        <span className={row.basis === 0 ? 'text-zinc-800' : 'text-zinc-500'}>
-          {row.basis === 0 ? '0 (Z)' : '1 (X)'}
+        <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[10px] font-mono border border-zinc-200">
+          {row.basis === 1 ? 'H' : '—'}
         </span>
       ),
     },

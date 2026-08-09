@@ -50,7 +50,7 @@ export const StepAliceTable: React.FC<StepAliceTableProps> = ({ result, visibleC
       key: 'basis',
       header: 'Initialize Basis',
       render: (row) => (
-        <span className={row.basis === 0 ? 'text-zinc-800' : 'text-zinc-500'}>
+        <span className="text-zinc-500">
           {row.basis === 0 ? '0 (Z)' : '1 (X)'}
         </span>
       ),

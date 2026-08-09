@@ -31,8 +31,7 @@ app.add_middleware(
 simulator = AerSimulator()
 
 # Bob's internal state
-NUM_BITS = 500
-bob_bases = [random.randint(0, 1) for _ in range(NUM_BITS)]
+bob_bases = []
 bob_measured_bits = []
 
 bob_final_key = None
@@ -40,6 +39,7 @@ bob_final_key = None
 # Definition of message payloads (Pydantic Models)
 class QubitPayload(BaseModel):
     qasm_strings: list[str]  # List of QASM string representations of qubits
+    num_bits: int
 
 class QberPayload(BaseModel):
     sample_indices: list[int]
@@ -55,9 +55,10 @@ def receive_qubits(payload: QubitPayload):
     QuantumCircuit objects, and simulates measurement using Bob's randomly
     generated bases. The measurement outcomes are saved in Bob's internal state.
     """
+    global bob_bases
     global bob_measured_bits
     bob_measured_bits = []
-    
+    bob_bases = [random.randint(0, 1) for _ in range(payload.num_bits)]
     for i, qasm_str in enumerate(payload.qasm_strings):
         # 1. Reconstruct the QuantumCircuit from QASM string
         qc = qasm2.loads(qasm_str)

@@ -66,7 +66,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
   
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
-  const [visibleColumns, setVisibleColumns] = useState(8);
+  const [visibleColumns, setVisibleColumns] = useState(12);
 
   const steps = isEve ? STEPS : STEPS.filter((s) => s.id !== 'eve');
   const stepContent = isEve ? STEP_CONTENT : STEP_CONTENT.filter((_, i) => i !== 1);
@@ -76,7 +76,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
     setLoading(true);
     setError(null);
     setCurrentStep(0);
-    setVisibleColumns(8);
+    setVisibleColumns(12);
     try {
       const data = await initializeConnection({
         num_bits: Number(numBits),

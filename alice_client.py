@@ -134,7 +134,7 @@ def initiliaze_connection(payload: FrontEndInitializePayload):
         qasm_strings = harmful_qasm_strings
 
     print("Sending Qubits over Quantum Channel (HTTP POST)...")
-    res = requests.post(f"{SERVER_URL}/quantum_channel/receive", json={"qasm_strings": qasm_strings})
+    res = requests.post(f"{SERVER_URL}/quantum_channel/receive", json={"qasm_strings": qasm_strings, "num_bits": payload.num_bits})
     print("Bob's response:", res.json())
 
     print("\n--- [2] SIFTING (Getting Bob's bases) ---")

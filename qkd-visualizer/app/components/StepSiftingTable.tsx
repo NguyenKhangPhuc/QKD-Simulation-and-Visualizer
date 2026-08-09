@@ -32,7 +32,7 @@ export const StepSiftingTable: React.FC<StepSiftingTableProps> = ({ result, visi
       key: 'alice',
       header: 'Alice Basis',
       render: (row) => (
-        <span className={row.aliceBasis === 0 ? 'text-zinc-800' : 'text-zinc-500'}>
+        <span className="text-zinc-500">
           {row.aliceBasis === 0 ? '0 (Z)' : '1 (X)'}
         </span>
       ),
@@ -41,7 +41,7 @@ export const StepSiftingTable: React.FC<StepSiftingTableProps> = ({ result, visi
       key: 'bob',
       header: 'Bob Basis',
       render: (row) => (
-        <span className={row.bobBasis === 0 ? 'text-zinc-800' : 'text-zinc-500'}>
+        <span className="text-zinc-500">
           {row.bobBasis === 0 ? '0 (Z)' : '1 (X)'}
         </span>
       ),
