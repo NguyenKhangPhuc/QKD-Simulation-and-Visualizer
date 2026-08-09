@@ -26,8 +26,8 @@ services:
       dockerfile: Dockerfile
     container_name: alice_client
     command: ["uvicorn", "alice_client:app", "--host", "0.0.0.0", "--port", "8001"]
-    ports:
-      - "8000:8001" # Exposes Alice client externally on host port 8000, mapping to internal container port 8001
+    expose:
+      - "8001" # Exposed internally for Caddy, removed direct host mapping for security
     environment:
       - BOB_SERVER_URL=http://bob_server:8000
     networks:
@@ -36,6 +36,26 @@ services:
     depends_on:
       bob_server:
         condition: service_healthy
+
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - qkd-network
+    depends_on:
+      - alice_client
+
+volumes:
+  caddy_data:
+  caddy_config:
 
 networks:
   qkd-network:

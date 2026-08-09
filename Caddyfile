@@ -1,0 +1,13 @@
+qkd-simulation.ddns.net {
+    # Reverse proxy to the Alice client service on its internal port
+    reverse_proxy alice_client:8001
+
+    # Enable compression for responses
+    encode gzip zstd
+
+    # Configure logging
+    log {
+        output stdout
+        format json
+    }
+}
