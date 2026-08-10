@@ -12,12 +12,19 @@ interface StepBobTableProps {
 }
 
 export const StepBobTable: React.FC<StepBobTableProps> = ({ result, visibleColumns }) => {
-  const rows = result.initial_bob_bits.map((measuredBit, idx) => ({
-    idx,
-    basis: result.initial_bob_bases[idx],
-    measuredBit,
-    state: getQubitState(measuredBit, result.initial_bob_bases[idx]),
-  }));
+  const bobBases = result.initial_bob_bases;
+  const bobBits = result.initial_bob_bits;
+  const indices = Object.keys(bobBits).map(Number);
+  const rows = indices.map((idx) => {
+    const measuredBit = bobBits[idx];
+    const basis = bobBases[idx] ?? 0;
+    return {
+      idx,
+      basis,
+      measuredBit,
+      state: getQubitState(measuredBit, basis),
+    };
+  });
 
   const columns: ColumnDef<typeof rows[0]>[] = [
     {
