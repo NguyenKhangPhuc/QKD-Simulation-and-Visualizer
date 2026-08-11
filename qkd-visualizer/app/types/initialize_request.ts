@@ -4,6 +4,7 @@ export interface InitializeConnectionRequest {
   distance_km?: number;
   depolarization_rate?: number;
   eve_intercept_prob?: number;
+  detector_efficiency?: number;
 }
 
 export interface InitializeConnectionResponse {

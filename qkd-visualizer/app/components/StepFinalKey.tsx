@@ -10,6 +10,9 @@ interface StepFinalKeyProps {
 
 export const StepFinalKey: React.FC<StepFinalKeyProps> = ({ result }) => {
   const isCompromised = result.qber > 0.11;
+  const aliceKey = result.alice_final_key || '';
+  const bobKey = result.bob_final_key || '';
+  const hasMismatch = aliceKey !== bobKey && bobKey !== '';
 
   if (isCompromised) {
     return (
@@ -39,6 +42,29 @@ export const StepFinalKey: React.FC<StepFinalKeyProps> = ({ result }) => {
         </p>
       </div>
 
+      {hasMismatch && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-5 rounded-2xl border border-zinc-300 border-dashed bg-zinc-50 text-sm text-zinc-800 space-y-3"
+        >
+          <div className="flex items-center gap-2 text-zinc-950 font-bold uppercase tracking-wider">
+            <svg className="w-5 h-5 text-zinc-700 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Warning: Key Mismatch Detected</span>
+          </div>
+          <p className="text-zinc-600 leading-relaxed">
+            Although the channel was deemed secure (QBER &le; 11%), Alice and Bob derived slightly different keys. 
+            This is because raw physical channel noise (depolarization and loss) causes bit errors that have not been reconciled. 
+            In a full QKD implementation, a classical **information reconciliation** protocol (like Cascade) must run to fix these mismatches before key derivation.
+          </p>
+          <p className="text-zinc-900 font-semibold bg-white p-3 rounded-lg border border-zinc-200 inline-block">
+            To generate perfectly matching keys, set the <strong className="font-bold underline">Depolarization Rate</strong> slider to <strong className="font-bold">0%</strong> in the parameters panel and run the simulation again.
+          </p>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Alice Key */}
         <motion.div
@@ -52,10 +78,20 @@ export const StepFinalKey: React.FC<StepFinalKeyProps> = ({ result }) => {
             <h4 className="font-bold text-black uppercase tracking-widest text-sm">Alice&apos;s Final Key</h4>
           </div>
           <div className="bg-white p-4 rounded-xl border border-zinc-200 font-mono text-sm text-zinc-700 break-all leading-relaxed shadow-inner overflow-hidden max-h-32">
-            {result.alice_final_key}
+            {aliceKey.split('').map((char, idx) => {
+              const matches = char === bobKey[idx];
+              return (
+                <span
+                  key={idx}
+                  className={matches ? 'text-zinc-700' : 'bg-zinc-100 text-zinc-400 font-bold px-0.5 border border-zinc-300 rounded'}
+                >
+                  {char}
+                </span>
+              );
+            })}
           </div>
           <p className="text-xs text-zinc-400 text-right">
-            Length: {result.alice_final_key?.length || 0} bits
+            Length: {aliceKey.length} bits
           </p>
         </motion.div>
 
@@ -71,10 +107,20 @@ export const StepFinalKey: React.FC<StepFinalKeyProps> = ({ result }) => {
             <h4 className="font-bold text-black uppercase tracking-widest text-sm">Bob&apos;s Final Key</h4>
           </div>
           <div className="bg-white p-4 rounded-xl border border-zinc-200 font-mono text-sm text-zinc-700 break-all leading-relaxed shadow-inner overflow-hidden max-h-32">
-            {result.bob_final_key}
+            {bobKey.split('').map((char, idx) => {
+              const matches = char === aliceKey[idx];
+              return (
+                <span
+                  key={idx}
+                  className={matches ? 'text-zinc-700' : 'bg-black text-white font-bold px-0.5 rounded border border-black'}
+                >
+                  {char}
+                </span>
+              );
+            })}
           </div>
           <p className="text-xs text-zinc-400 text-right">
-            Length: {result.bob_final_key?.length || 0} bits
+            Length: {bobKey.length} bits
           </p>
         </motion.div>
       </div>

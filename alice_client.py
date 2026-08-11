@@ -45,6 +45,7 @@ class FrontEndInitializePayload(BaseModel):
     distance_km: float = 10.0
     depolarization_rate: float = 0.02
     eve_intercept_prob: float = 1.0
+    detector_efficiency: float = 0.85
 
 
 def generate_bits_and_base(num_bits: int):
@@ -115,6 +116,7 @@ def initialize_connection(payload: FrontEndInitializePayload):
         depolarization_rate=payload.depolarization_rate,
         is_eve=payload.is_eve,
         eve_intercept_prob=payload.eve_intercept_prob,
+        detector_efficiency=payload.detector_efficiency
     )
     received_qasm, received_indices, eve_info, noise_model = channel.transmit(
         qasm_strings
@@ -140,7 +142,11 @@ def initialize_connection(payload: FrontEndInitializePayload):
     bob_bases = res.json()["bob_bases"]
 
     # Filter matching bases ONLY for photons that actually arrived
-    matching_indices = [i for i in received_indices if alice_bases[i] == bob_bases[i]]
+    # Since bob_bases is a dictionary with string keys from JSON serialization, we access it using str(i)
+    matching_indices = [
+        i for i in received_indices 
+        if str(i) in bob_bases and alice_bases[i] == bob_bases[str(i)]
+    ]
     print(f"Number of bits with matching bases: {len(matching_indices)}")
 
     # 6. QBER Calculation
@@ -209,6 +215,7 @@ def initialize_connection(payload: FrontEndInitializePayload):
         f"{SERVER_URL}/chat/receive",
         json={"encrypted_message": encrypted_message},
     )
+    print(f"Request information {res.json()}")
     bob_final_key = res.json().get("bob_final_key", "")
 
     return {

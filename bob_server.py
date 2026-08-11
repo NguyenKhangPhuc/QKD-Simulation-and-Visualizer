@@ -140,7 +140,6 @@ def receive_secret_message(encrypted_message: str = Body(..., embed=True)):
     using the established final QKD key. Returns the decrypted message or an error.
     """
     global bob_final_key
-    print(bob_final_key)
     if not bob_final_key:
         return {"error": "Bob does not have a key to decrypt!"}
 
@@ -162,7 +161,12 @@ def receive_secret_message(encrypted_message: str = Body(..., embed=True)):
         }
 
     except Exception as e:
-        return {"status": "error", "message": "Decryption failed! Key mismatch."}
+        print(f"Return final key of bob {bob_final_key}")
+        return {
+            "status": "error",
+            "message": "Decryption failed! Key mismatch.",
+            "bob_final_key": bob_final_key,
+        }
 
 
 if __name__ == "__main__":

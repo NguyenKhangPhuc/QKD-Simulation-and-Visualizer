@@ -63,6 +63,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
   const [distanceKm, setDistanceKm] = useState<number>(10.0);
   const [depolarizationRate, setDepolarizationRate] = useState<number>(0.02);
   const [eveInterceptProb, setEveInterceptProb] = useState<number>(1.0);
+  const [detectorEfficiency, setDetectorEfficiency] = useState<number>(0.85);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InitializeConnectionResponse | null>(null);
@@ -87,6 +88,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
         distance_km: Number(distanceKm),
         depolarization_rate: Number(depolarizationRate),
         eve_intercept_prob: Number(eveInterceptProb),
+        detector_efficiency: Number(detectorEfficiency),
       });
       setResult(data);
     } catch (err: unknown) {
@@ -195,11 +197,10 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                       key={preset}
                       type="button"
                       onClick={() => setNumBits(preset)}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors ${
-                        numBits === preset
-                          ? 'bg-zinc-100 text-black border border-zinc-400 shadow-sm'
-                          : 'bg-white text-zinc-500 hover:text-zinc-700 border border-zinc-200'
-                      }`}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors ${numBits === preset
+                        ? 'bg-zinc-100 text-black border border-zinc-400 shadow-sm'
+                        : 'bg-white text-zinc-500 hover:text-zinc-700 border border-zinc-200'
+                        }`}
                     >
                       {preset} bits
                     </button>
@@ -217,11 +218,10 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEve(false)}
-                  className={`flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all border ${
-                    !isEve
-                      ? 'bg-zinc-50 text-black border-zinc-400 shadow-sm'
-                      : 'bg-white text-zinc-500 border-zinc-200 hover:text-zinc-700 hover:bg-zinc-50'
-                  }`}
+                  className={`flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all border ${!isEve
+                    ? 'bg-zinc-50 text-black border-zinc-400 shadow-sm'
+                    : 'bg-white text-zinc-500 border-zinc-200 hover:text-zinc-700 hover:bg-zinc-50'
+                    }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${!isEve ? 'bg-black' : 'bg-zinc-300'}`} />
                   <span>Secure (No Eve)</span>
@@ -229,11 +229,10 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEve(true)}
-                  className={`flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all border ${
-                    isEve
-                      ? 'bg-zinc-100 text-black border-zinc-500 border-dashed shadow-sm'
-                      : 'bg-white text-zinc-500 border-zinc-200 hover:text-zinc-700 hover:bg-zinc-50'
-                  }`}
+                  className={`flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all border ${isEve
+                    ? 'bg-zinc-100 text-black border-zinc-500 border-dashed shadow-sm'
+                    : 'bg-white text-zinc-500 border-zinc-200 hover:text-zinc-700 hover:bg-zinc-50'
+                    }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${isEve ? 'bg-black animate-pulse' : 'bg-zinc-300'}`} />
                   <span>Eavesdropper (Eve)</span>
@@ -250,7 +249,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
           {/* Physical Channel Parameters */}
           <div className="border-t border-zinc-200 pt-6">
             <h3 className="text-sm font-bold text-zinc-700 mb-4">Physical Channel Parameters</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Distance Slider */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
@@ -260,7 +259,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                   <div className="flex items-center gap-3">
                     <input
                       type="range"
-                      min="1"
+                      min="0"
                       max="100"
                       step="1"
                       value={distanceKm}
@@ -269,12 +268,12 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                     />
                     <input
                       type="number"
-                      min="1"
+                      min="0"
                       max="100"
                       step="1"
                       value={distanceKm}
                       onChange={(e) => setDistanceKm(Number(e.target.value))}
-                      className="w-16 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
                     />
                     <span className="text-xs text-zinc-500 font-medium">km</span>
                   </div>
@@ -307,7 +306,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                       step="0.005"
                       value={depolarizationRate}
                       onChange={(e) => setDepolarizationRate(Number(e.target.value))}
-                      className="w-16 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
                     />
                     <span className="text-xs text-zinc-500 font-medium">%</span>
                   </div>
@@ -341,13 +340,46 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                       step="0.1"
                       value={eveInterceptProb}
                       onChange={(e) => setEveInterceptProb(Number(e.target.value))}
-                      className="w-16 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-50"
+                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-50"
                       disabled={!isEve}
                     />
                     <span className="text-xs text-zinc-500 font-medium">%</span>
                   </div>
                   <p className="text-[11px] text-zinc-400">
                     {isEve ? `${(eveInterceptProb * 100).toFixed(0)}% of qubits intercepted` : 'Eve is disabled'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Detector Efficiency Slider */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+                  Detector Efficiency
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={detectorEfficiency}
+                      onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
+                      className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={detectorEfficiency}
+                      onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
+                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                    />
+                    <span className="text-xs text-zinc-500 font-medium">%</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400">
+                    {(detectorEfficiency * 100).toFixed(0)}% Bob detector efficiency
                   </p>
                 </div>
               </div>
