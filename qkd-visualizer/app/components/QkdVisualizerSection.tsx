@@ -47,7 +47,7 @@ const STEP_CONTENT = [
   },
   {
     title: "QBER Verification",
-    desc: "Alice reveals 20% of the sifted key publicly. They compare these sample bits. If more than 11% are wrong, Eve is detected.",
+    desc: "Alice reveals 20% of the sifted key publicly. They compare these sample bits. If the Serfling upper bound exceeds 11%, Eve is detected and the session is aborted.",
   },
   {
     title: "Final Shared Secret",
@@ -59,11 +59,12 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
   isEve,
   setIsEve,
 }) => {
-  const [numBits, setNumBits] = useState<number>(500);
+  const [numBits, setNumBits] = useState<number>(3000);
   const [distanceKm, setDistanceKm] = useState<number>(10.0);
   const [depolarizationRate, setDepolarizationRate] = useState<number>(0.02);
   const [eveInterceptProb, setEveInterceptProb] = useState<number>(1.0);
   const [detectorEfficiency, setDetectorEfficiency] = useState<number>(0.85);
+  const [epsilon, setEpsilon] = useState<number>(0.20);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InitializeConnectionResponse | null>(null);
@@ -89,6 +90,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
         depolarization_rate: Number(depolarizationRate),
         eve_intercept_prob: Number(eveInterceptProb),
         detector_efficiency: Number(detectorEfficiency),
+        epsilon: Number(epsilon),
       });
       setResult(data);
     } catch (err: unknown) {
@@ -174,17 +176,17 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
-                    min="50"
-                    max="1000"
-                    step="50"
+                    min="1000"
+                    max="5000"
+                    step="100"
                     value={numBits}
                     onChange={(e) => setNumBits(Number(e.target.value))}
                     className="w-full h-2 bg-zinc-200 border border-zinc-300 rounded-lg appearance-none cursor-pointer accent-black"
                   />
                   <input
                     type="number"
-                    min="10"
-                    max="2000"
+                    min="1000"
+                    max="5000"
                     value={numBits}
                     onChange={(e) => setNumBits(Number(e.target.value))}
                     className="w-24 px-3 py-2 bg-white border border-zinc-300 rounded-xl text-black font-mono text-center font-bold focus:outline-none focus:border-zinc-500 shadow-sm"
@@ -192,7 +194,7 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                 </div>
                 {/* Presets */}
                 <div className="flex gap-2">
-                  {[100, 300, 500, 1000].map((preset) => (
+                  {[1000, 2000, 3000, 5000].map((preset) => (
                     <button
                       key={preset}
                       type="button"
@@ -381,6 +383,40 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
                   <p className="text-[11px] text-zinc-400">
                     {(detectorEfficiency * 100).toFixed(0)}% Bob detector efficiency
                   </p>
+                </div>
+              </div>
+
+              {/* Epsilon / Security Threshold Selector */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+                  QBER Security Tolerance (ε — Serfling Failure Probability)
+                </label>
+                <p className="text-[11px] text-zinc-400 mb-3">
+                  Controls how conservatively the Serfling upper bound is computed. A smaller ε widens the safety margin (harder to pass, more secure).
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: '20%', value: 0.20, desc: 'Allow 20% error' },
+                    { label: '18%', value: 0.18, desc: 'Allow 18% error' },
+                    { label: '15%', value: 0.15, desc: 'Allow 15% error' },
+                    { label: '1%', value: 0.01, desc: 'Allow 1% error' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEpsilon(opt.value)}
+                      className={`flex flex-col items-center justify-center gap-0.5 px-3 py-3 rounded-xl text-xs font-semibold transition-all border ${
+                        epsilon === opt.value
+                          ? 'bg-zinc-900 text-white border-zinc-900 shadow-md'
+                          : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-800'
+                      }`}
+                    >
+                      <span className="text-sm font-bold font-mono">{opt.label}</span>
+                      <span className={`text-[10px] font-normal ${epsilon === opt.value ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                        {opt.desc}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

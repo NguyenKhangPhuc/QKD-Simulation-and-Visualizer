@@ -5,6 +5,7 @@ export interface InitializeConnectionRequest {
   depolarization_rate?: number;
   eve_intercept_prob?: number;
   detector_efficiency?: number;
+  epsilon?: number;
 }
 
 export interface InitializeConnectionResponse {
@@ -22,7 +23,20 @@ export interface InitializeConnectionResponse {
   sample_bits_qber: number[];
   mismatches?: number;
   qber: number;
+  qber_bound?: number;
   received_photon_count?: number;
+  // Key progression
+  alice_raw_key?: string;
+  alice_reconciled_key?: string;
+  alice_secret_final_key?: string;
+  bob_raw_key?: string;
+  bob_reconciled_key?: string;
+  bob_secret_final_key?: string;
+  // Cascade stats
+  leaked_bits?: number;
+  corrections?: number;
+  is_final_key_matched?: boolean;
+  // Legacy / convenience
   alice_final_key?: string;
   bob_final_key?: string;
   encrypted_message?: string;
