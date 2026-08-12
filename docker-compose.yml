@@ -10,14 +10,16 @@ services:
       - qkd-network
     expose:
       - "8000"
+    environment:
+      - ALICE_CLIENT_URL=http://alice_client:8001
     restart: unless-stopped
     healthcheck:
-      # Use python's standard library to perform a lightweight healthcheck without needing curl/wget
+      # Lightweight healthcheck using Python's standard library (no curl/wget needed)
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/classical_channel/bases')"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
 
   alice_client:
     image: ${DOCKER_IMAGE:-nguyenkhangphuc/qkd-simulation:latest}
