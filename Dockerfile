@@ -29,7 +29,7 @@ RUN groupadd -g 1000 appgroup && \
     useradd -r -u 1000 -g appgroup -m -s /bin/sbin appuser
 
 # Copy application source code and adjust ownership
-COPY --chown=appuser:appgroup alice_client.py bob_server.py channel_model.py ./
+COPY --chown=appuser:appgroup alice_client.py bob_server.py channel_model.py cascade.py ./
 
 # Expose API ports
 EXPOSE 8000
