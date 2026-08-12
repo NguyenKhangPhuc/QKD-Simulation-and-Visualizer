@@ -78,6 +78,7 @@ jobs:
           # SSH into target host, navigate to directory, update env image, pull and restart containers
           ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd QKD-Simulation-and-Visualizer/ && \
+            git pull origin main && \
             export DOCKER_IMAGE=$DOCKER_IMAGE && \
             docker compose pull && \
             docker compose down && \
