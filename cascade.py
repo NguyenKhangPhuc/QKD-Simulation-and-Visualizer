@@ -23,14 +23,37 @@ import random
 import numpy as np
 
 
+def generate_toeplitz_matrix(n: int, final_len: int, seed: int) -> np.ndarray:
+    """
+    Generate a random Toeplitz matrix of shape (final_len, n) over GF(2) using the shared seed.
+
+    Args:
+        n: Input key length.
+        final_len: Output key length (must satisfy 0 < final_len <= n).
+        seed: Shared random seed.
+
+    Returns:
+        numpy.ndarray of shape (final_len, n) containing 0s and 1s.
+    """
+    if final_len <= 0 or final_len > n:
+        raise ValueError("final_len must satisfy 0 < final_len <= n.")
+    
+    # Generate the defining vector for the Toeplitz matrix
+    rng = np.random.default_rng(seed)
+    toeplitz_vector = rng.integers(0, 2, size=(n + final_len - 1))
+
+    # Build index lookup: T[i, j] = toeplitz_vector[final_len - 1 + j - i]
+    # Valid index range: [0, n + final_len - 2], which matches the vector size exactly.
+    i_indices = np.arange(final_len)[:, None]
+    j_indices = np.arange(n)
+    matrix_indices = final_len - 1 + j_indices - i_indices
+    return toeplitz_vector[matrix_indices]
+
+
 def toeplitz_hash(key_str: str, final_len: int, seed: int) -> str:
     """
     Compress a bit-string key of length N down to final_len (M) bits using a
     random Toeplitz matrix over GF(2).
-
-    A Toeplitz matrix T is fully defined by a single vector of length (N + M - 1)
-    via the element formula:
-        # T[i, j] = toeplitz_vector[N - 1 + j - i]
 
     Both Alice and Bob use the same seed to independently reproduce the same
     matrix without exchanging it over the channel.
@@ -46,19 +69,7 @@ def toeplitz_hash(key_str: str, final_len: int, seed: int) -> str:
     key_bits = np.array([int(bit) for bit in key_str], dtype=int)
     n = len(key_bits)
 
-    if final_len <= 0 or final_len > n:
-        raise ValueError("final_len must satisfy 0 < final_len <= len(key_str).")
-
-    # Generate the defining vector for the Toeplitz matrix
-    rng = np.random.default_rng(seed)
-    toeplitz_vector = rng.integers(0, 2, size=(n + final_len - 1))
-
-    # Build index lookup: T[i, j] = toeplitz_vector[final_len - 1 + j - i]
-    # Valid index range: [0, n + final_len - 2], which matches the vector size exactly.
-    i_indices = np.arange(final_len)[:, None]
-    j_indices = np.arange(n)
-    matrix_indices = final_len - 1 + j_indices - i_indices
-    toeplitz_matrix = toeplitz_vector[matrix_indices]
+    toeplitz_matrix = generate_toeplitz_matrix(n, final_len, seed)
 
     # GF(2) matrix-vector product: dot product modulo 2
     hashed_bits = np.dot(toeplitz_matrix, key_bits) % 2

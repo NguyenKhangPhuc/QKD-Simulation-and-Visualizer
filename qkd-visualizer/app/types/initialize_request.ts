@@ -36,6 +36,8 @@ export interface InitializeConnectionResponse {
   leaked_bits?: number;
   corrections?: number;
   is_final_key_matched?: boolean;
+  // Toeplitz Matrix
+  toeplitz_matrix?: number[][];
   // Legacy / convenience
   alice_final_key?: string;
   bob_final_key?: string;

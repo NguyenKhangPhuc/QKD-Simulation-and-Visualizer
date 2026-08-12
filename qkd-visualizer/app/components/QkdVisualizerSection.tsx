@@ -115,7 +115,15 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
     }
   };
 
-  const currentStepId = steps[currentStep].id;
+  // Synchronize state when steps array length changes (e.g. toggling Eve on/off)
+  React.useEffect(() => {
+    if (currentStep >= steps.length) {
+      setCurrentStep(Math.max(0, steps.length - 1));
+    }
+  }, [steps.length, currentStep]);
+
+  const safeStepIndex = Math.min(currentStep, steps.length - 1);
+  const currentStepId = steps[safeStepIndex]?.id || 'alice';
 
   const renderStep = () => {
     if (!result) return null;
@@ -252,147 +260,152 @@ export const QkdVisualizerSection: React.FC<QkdVisualizerSectionProps> = ({
           <div className="border-t border-zinc-200 pt-6">
             <h3 className="text-sm font-bold text-zinc-700 mb-4">Physical Channel Parameters</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
               {/* Distance Slider */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-zinc-600 uppercase tracking-wider">
                   Fiber Distance
                 </label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={distanceKm}
-                      onChange={(e) => setDistanceKm(Number(e.target.value))}
-                      className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={distanceKm}
-                      onChange={(e) => setDistanceKm(Number(e.target.value))}
-                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
-                    />
-                    <span className="text-xs text-zinc-500 font-medium">km</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    T = 10<sup>-(0.2 × {distanceKm} / 10)</sup> = {Math.pow(10, -(0.2 * distanceKm) / 10).toFixed(4)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(Number(e.target.value))}
+                    className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                  />
+                  <span className="text-xs text-zinc-500 font-medium">km</span>
                 </div>
+                <p className="text-[11px] text-zinc-400">
+                  Transmissivity T = 10<sup>-(0.2 × {distanceKm} / 10)</sup> = {Math.pow(10, -(0.2 * distanceKm) / 10).toFixed(4)}
+                </p>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Increasing fiber distance causes exponential photon attenuation. This results in fewer detected photons at Bob&apos;s station and limits the length of the derived raw keys.
+                </p>
               </div>
 
               {/* Depolarization Rate */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-zinc-600 uppercase tracking-wider">
                   Depolarization Rate
                 </label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="0.10"
-                      step="0.005"
-                      value={depolarizationRate}
-                      onChange={(e) => setDepolarizationRate(Number(e.target.value))}
-                      className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="0.10"
-                      step="0.005"
-                      value={depolarizationRate}
-                      onChange={(e) => setDepolarizationRate(Number(e.target.value))}
-                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
-                    />
-                    <span className="text-xs text-zinc-500 font-medium">%</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    {depolarizationRate * 100}% intrinsic channel noise
-                  </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="0.10"
+                    step="0.005"
+                    value={depolarizationRate}
+                    onChange={(e) => setDepolarizationRate(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="0.10"
+                    step="0.005"
+                    value={depolarizationRate}
+                    onChange={(e) => setDepolarizationRate(Number(e.target.value))}
+                    className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                  />
+                  <span className="text-xs text-zinc-500 font-medium">%</span>
                 </div>
+                <p className="text-[11px] text-zinc-400">
+                  {depolarizationRate * 100}% intrinsic channel noise
+                </p>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Models physical quantum channel decoherence. Higher rates inject measurement errors into Bob&apos;s qubits, raising QBER and triggering Cascade key corrections.
+                </p>
               </div>
 
               {/* Eve Intercept Probability */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-zinc-600 uppercase tracking-wider">
                   Eve Intercept Probability
                 </label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={eveInterceptProb}
-                      onChange={(e) => setEveInterceptProb(Number(e.target.value))}
-                      className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
-                      disabled={!isEve}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={eveInterceptProb}
-                      onChange={(e) => setEveInterceptProb(Number(e.target.value))}
-                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-50"
-                      disabled={!isEve}
-                    />
-                    <span className="text-xs text-zinc-500 font-medium">%</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    {isEve ? `${(eveInterceptProb * 100).toFixed(0)}% of qubits intercepted` : 'Eve is disabled'}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={eveInterceptProb}
+                    onChange={(e) => setEveInterceptProb(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
+                    disabled={!isEve}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={eveInterceptProb}
+                    onChange={(e) => setEveInterceptProb(Number(e.target.value))}
+                    className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-50"
+                    disabled={!isEve}
+                  />
+                  <span className="text-xs text-zinc-500 font-medium">%</span>
                 </div>
+                <p className="text-[11px] text-zinc-400">
+                  {isEve ? `${(eveInterceptProb * 100).toFixed(0)}% of qubits intercepted` : 'Eve is disabled'}
+                </p>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  The probability that Eve intercepts a qubit. Under intercept-resend, measurement collapsed states induce an additional 25% error rate on those intercepted bits.
+                </p>
               </div>
 
               {/* Detector Efficiency Slider */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-zinc-600 uppercase tracking-wider">
                   Detector Efficiency
                 </label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={detectorEfficiency}
-                      onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
-                      className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={detectorEfficiency}
-                      onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
-                      className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
-                    />
-                    <span className="text-xs text-zinc-500 font-medium">%</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    {(detectorEfficiency * 100).toFixed(0)}% Bob detector efficiency
-                  </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={detectorEfficiency}
+                    onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-zinc-600"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={detectorEfficiency}
+                    onChange={(e) => setDetectorEfficiency(Number(e.target.value))}
+                    className="w-20 px-2 py-1.5 bg-white border border-zinc-300 rounded-lg text-zinc-800 font-mono text-center text-sm focus:outline-none focus:border-zinc-500"
+                  />
+                  <span className="text-xs text-zinc-500 font-medium">%</span>
                 </div>
+                <p className="text-[11px] text-zinc-400">
+                  {(detectorEfficiency * 100).toFixed(0)}% Bob detector efficiency
+                </p>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Represents the efficiency of Bob&apos;s single-photon avalanche photodiode detectors. Lower efficiency translates directly to high photon packet loss.
+                </p>
               </div>
 
               {/* Epsilon / Security Threshold Selector */}
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2">
+              <div className="md:col-span-2 space-y-3">
+                <label className="block text-sm font-semibold text-zinc-600 uppercase tracking-wider">
                   QBER Security Tolerance (ε — Serfling Failure Probability)
                 </label>
-                <p className="text-[11px] text-zinc-400 mb-3">
-                  Controls how conservatively the Serfling upper bound is computed. A smaller ε widens the safety margin (harder to pass, more secure).
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Controls the statistical confidence interval for QBER estimation. A lower value of ε represents a tighter, more strict security bounding, requiring a wider safety margin to proceed.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[

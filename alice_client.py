@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 from channel_model import RealisticQuantumChannel
-from cascade import get_parity, toeplitz_hash
+from cascade import get_parity, toeplitz_hash, generate_toeplitz_matrix
 
 SERVER_URL = os.getenv("BOB_SERVER_URL", "http://localhost:8000")
 
@@ -299,6 +299,7 @@ def initialize_connection(payload: FrontEndInitializePayload):
     toeplitz_seed = random.randint(0, 2**32 - 1)
     alice_raw_key_str = "".join(str(b) for b in alice_raw_key)
     alice_secret_final_key = toeplitz_hash(alice_raw_key_str, final_len, toeplitz_seed)
+    toeplitz_matrix_data = generate_toeplitz_matrix(len(alice_raw_key), final_len, toeplitz_seed).tolist()
     print(f"Privacy amplification: {len(alice_raw_key_str)} -> {final_len} bits (seed={toeplitz_seed})")
 
     # 12. Encrypt test message and send to Bob
@@ -352,6 +353,8 @@ def initialize_connection(payload: FrontEndInitializePayload):
         "leaked_bits": leaked_bits,
         "corrections": corrections,
         "is_final_key_matched": is_final_key_matched,
+        # Toeplitz Matrix
+        "toeplitz_matrix": toeplitz_matrix_data,
         # Encryption
         "encrypted_message": encrypted_message,
     }
